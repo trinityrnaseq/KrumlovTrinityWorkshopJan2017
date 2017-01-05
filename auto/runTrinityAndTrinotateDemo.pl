@@ -59,6 +59,7 @@ my $trinotate_dir = $ENV{TRINOTATE_HOME} or die "Error, need env var TRINOTATE_H
 
 
 
+
 my $OS_type = `uname`;
 
 my $workdir = cwd();
@@ -69,6 +70,8 @@ my @tools = qw (Trinity
     bowtie
     samtools
     igv.sh
+    TransDecoder.LongOrfs
+    TransDecoder.Predict
 );
  
 {
@@ -144,13 +147,10 @@ my $run_Trinity_cmd = "$trinity_dir/Trinity --seqType fq "
 
 
 ## representation of reads by the assembly
-&process_cmd("$trinity_dir/util/bowtie_PE_separate_then_join.pl --target trinity_out_dir/Trinity.fasta --seqType fq --left data/wt_SRR1582651_1.fastq --right data/wt_SRR1582651_2.fastq --aligner bowtie -- -p 2 --all --best --strata -m 300", 
-             "$checkpoints_dir/bowtie_PE_sep_join.ok");
+&process_cmd("bowtie2-build trinity_out_dir/Trinity.fasta trinity_out_dir/Trinity.fasta", "$checkpoints_dir/bowtie2_build_read_assess.ok");
 
-&process_cmd("ls -ltr bowtie_out/", "$checkpoints_dir/ls_bowtie_outdir.ok"); 
+&process_cmd("bowtie2 --local --no-unal -x trinity_out_dir/Trinity.fasta -q -1 data/wt_SRR1582651_1.fastq -2 data/wt_SRR1582651_2.fastq | samtools view -Sb - | samtools sort -o - - > bowtie2.nameSorted.bam", "$checkpoints_dir/bowtie2_align_reads_assess.ok");
 
-&process_cmd("$trinity_dir/util/SAM_nameSorted_to_uniq_count_stats.pl bowtie_out/bowtie_out.nameSorted.bam",
-             "$checkpoints_dir/nameSorted_sam_stats.ok");
 
 
 ###########################################
@@ -211,7 +211,8 @@ foreach my $condition (sort keys %samples) {
             &process_cmd("head $rsem_trans_result_file", "$checkpoints_dir/head.$sample.rsem.trans.ok");
             
             &process_cmd("head $rsem_gene_result_file", "$checkpoints_dir/head.$sample.rsem.genes.ok");
-            
+
+            $first_round = 0;
         }
     }
     
@@ -270,7 +271,7 @@ if ($AUTO_MODE) {
 
 &process_cmd("head edgeR_trans/Trinity_trans.counts.matrix.GSNO_vs_WT.edgeR.DE_results", "$checkpoints_dir/head.edgeR_trans.DE_results.ok");
 
-&show("edge_trans/Trinity_trans.counts.matrix.GSNO_vs_WT.edgeR.DE_results.MA_n_Volcano.pdf");
+&show("edgeR_trans/Trinity_trans.counts.matrix.GSNO_vs_WT.edgeR.DE_results.MA_n_Volcano.pdf");
 
 &change_dir("edgeR_trans", "$checkpoints_dir/cd.edgeR.ok");
 
@@ -314,9 +315,9 @@ if ($AUTO_MODE) {
 ## need sequence lengths file
 &process_cmd("$trinity_dir/util/misc/fasta_seq_length.pl ../trinity_out_dir/Trinity.fasta > Trinity.seqLengths", "$checkpoints_dir/trin_seqlengths.ok");
 
-&process_cmd("$trinity_dir/Analysis/DifferentialExpression/run_GOseq.pl --genes_single_factor Trinity_trans.counts.matrix.GSNO_vs_WT.edgeR.DE_results.P1e-3_C2.GSNO-UP.subset --GO_assignments ../Trinotate/Trinotate.xls.gene_ontology --lengths Trinity.seqLengths", "$checkpoints_dir/go_seq_gsno.ok");
+&process_cmd("$trinity_dir/Analysis/DifferentialExpression/run_GOseq.pl --genes_single_factor Trinity_trans.counts.matrix.GSNO_vs_WT.edgeR.DE_results.P1e-3_C2.GSNO-UP.subset --GO_assignments ../Trinotate/Trinotate.xls.gene_ontology --lengths Trinity.seqLengths --background Trinity_trans.counts.matrix.GSNO_vs_WT.edgeR.count_matrix", "$checkpoints_dir/go_seq_gsno.ok");
 
-&process_cmd("$trinity_dir/Analysis/DifferentialExpression/run_GOseq.pl --genes_single_factor Trinity_trans.counts.matrix.GSNO_vs_WT.edgeR.DE_results.P1e-3_C2.WT-UP.subset --GO_assignments ../Trinotate/Trinotate.xls.gene_ontology --lengths Trinity.seqLengths", "$checkpoints_dir/go_seq_wt.ok");
+&process_cmd("$trinity_dir/Analysis/DifferentialExpression/run_GOseq.pl --genes_single_factor Trinity_trans.counts.matrix.GSNO_vs_WT.edgeR.DE_results.P1e-3_C2.WT-UP.subset --GO_assignments ../Trinotate/Trinotate.xls.gene_ontology --lengths Trinity.seqLengths --background Trinity_trans.counts.matrix.GSNO_vs_WT.edgeR.count_matrix", "$checkpoints_dir/go_seq_wt.ok");
 
 
 #######################################
@@ -336,9 +337,9 @@ if ($AUTO_MODE) {
 
 # load in the gene results
 
-&process_cmd("$trinotate_dir/util/transcript_expression/import_expression_and_DE_results.pl  --sqlite ../Trinotate.sqlite --component_mode  --samples_file ../samples.txt --count_matrix ../Trinity_genes.counts.matrix --fpkm_matrix ../Trinity_genes.TMM.EXPR.matrix", "$checkpoints_dir/Trinotate.load_gene_expr_data.ok");
+&process_cmd("$trinotate_dir/util/transcript_expression/import_expression_and_DE_results.pl  --sqlite ../Trinotate.sqlite --gene_mode  --samples_file ../samples.txt --count_matrix ../Trinity_genes.counts.matrix --fpkm_matrix ../Trinity_genes.TMM.EXPR.matrix", "$checkpoints_dir/Trinotate.load_gene_expr_data.ok");
 
-&process_cmd("$trinotate_dir/util/transcript_expression/import_expression_and_DE_results.pl --sqlite ../Trinotate.sqlite --component_mode  --samples_file ../samples.txt --DE_dir ../edgeR_gene ", "$checkpoints_dir/Trinotate.load_gene_DE_data.ok");
+&process_cmd("$trinotate_dir/util/transcript_expression/import_expression_and_DE_results.pl --sqlite ../Trinotate.sqlite --gene_mode  --samples_file ../samples.txt --DE_dir ../edgeR_gene ", "$checkpoints_dir/Trinotate.load_gene_DE_data.ok");
 
 
 print STDERR "\n\n\tCommand-line Demo complete.  Congratulations! :)  Now explore your data via TrinotateWeb\n\n\n\n";
@@ -464,6 +465,7 @@ sub run_Trinotate_demo {
    
     &process_cmd("mkdir Trinotate", "$checkpoints_dir/mkdir_Trinotate.ok");
 
+    
     &change_dir("Trinotate", "$checkpoints_dir/cd_Trinotate.ok");
     
     my $ini_reader = new IniReader($trinotate_conf_file);

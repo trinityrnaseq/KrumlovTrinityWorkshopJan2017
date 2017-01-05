@@ -57,7 +57,10 @@ $ENV{PATH} .= ":$trinity_dir";  ## adding it to our PATH setting.
 
 my $trinotate_dir = $ENV{TRINOTATE_HOME} or die "Error, need env var TRINOTATE_HOME set to Trinotate installation directory (note this is different than Trinity) ";
 
-
+unless ($ENV{TRANSDECODER_HOME}) {
+    die "Error, must set env var TRANSDECODER_HOME ";
+}
+$ENV{PATH} = "$trinity_dir/trinity-plugins/BIN/:$ENV{TRANSDECODER_HOME}:$ENV{PATH}";
 
 
 my $OS_type = `uname`;
@@ -306,20 +309,6 @@ if ($AUTO_MODE) {
 
 &run_Trinotate_demo(); # cd's into Trinotate
 
-################
-## GO enrichment 
-################
-
-&change_dir("../edgeR_trans", "$checkpoints_dir/cd_back_to_edgeR_after_trinotate.ok");
-
-## need sequence lengths file
-&process_cmd("$trinity_dir/util/misc/fasta_seq_length.pl ../trinity_out_dir/Trinity.fasta > Trinity.seqLengths", "$checkpoints_dir/trin_seqlengths.ok");
-
-&process_cmd("$trinity_dir/Analysis/DifferentialExpression/run_GOseq.pl --genes_single_factor Trinity_trans.counts.matrix.GSNO_vs_WT.edgeR.DE_results.P1e-3_C2.GSNO-UP.subset --GO_assignments ../Trinotate/Trinotate.xls.gene_ontology --lengths Trinity.seqLengths --background Trinity_trans.counts.matrix.GSNO_vs_WT.edgeR.count_matrix", "$checkpoints_dir/go_seq_gsno.ok");
-
-&process_cmd("$trinity_dir/Analysis/DifferentialExpression/run_GOseq.pl --genes_single_factor Trinity_trans.counts.matrix.GSNO_vs_WT.edgeR.DE_results.P1e-3_C2.WT-UP.subset --GO_assignments ../Trinotate/Trinotate.xls.gene_ontology --lengths Trinity.seqLengths --background Trinity_trans.counts.matrix.GSNO_vs_WT.edgeR.count_matrix", "$checkpoints_dir/go_seq_wt.ok");
-
-
 #######################################
 ## Prep TrinotateWeb w/ Expression Data
 #######################################
@@ -337,9 +326,9 @@ if ($AUTO_MODE) {
 
 # load in the gene results
 
-&process_cmd("$trinotate_dir/util/transcript_expression/import_expression_and_DE_results.pl  --sqlite ../Trinotate.sqlite --gene_mode  --samples_file ../samples.txt --count_matrix ../Trinity_genes.counts.matrix --fpkm_matrix ../Trinity_genes.TMM.EXPR.matrix", "$checkpoints_dir/Trinotate.load_gene_expr_data.ok");
+&process_cmd("$trinotate_dir/util/transcript_expression/import_expression_and_DE_results.pl  --sqlite Trinotate.sqlite --gene_mode  --samples_file ../samples.txt --count_matrix ../Trinity_genes.counts.matrix --fpkm_matrix ../Trinity_genes.TMM.EXPR.matrix", "$checkpoints_dir/Trinotate.load_gene_expr_data.ok");
 
-&process_cmd("$trinotate_dir/util/transcript_expression/import_expression_and_DE_results.pl --sqlite ../Trinotate.sqlite --gene_mode  --samples_file ../samples.txt --DE_dir ../edgeR_gene ", "$checkpoints_dir/Trinotate.load_gene_DE_data.ok");
+&process_cmd("$trinotate_dir/util/transcript_expression/import_expression_and_DE_results.pl --sqlite Trinotate.sqlite --gene_mode  --samples_file ../samples.txt --DE_dir ../edgeR_gene ", "$checkpoints_dir/Trinotate.load_gene_DE_data.ok");
 
 
 print STDERR "\n\n\tCommand-line Demo complete.  Congratulations! :)  Now explore your data via TrinotateWeb\n\n\n\n";

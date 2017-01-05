@@ -17,8 +17,8 @@ TMHMM_PROG=tmhmm
 
 # dbs
 SWISSPROT_PEP=../data/mini_sprot.pep
-PFAM_DB=../data/trinotate_data/Pfam-A.hmm
-TRINOTATE_BOILERPLATE=../data/trinotate_data/Trinotate.sqlite
+PFAM_DB=../../trinotate_databases/Pfam-A.hmm
+TRINOTATE_BOILERPLATE=../../trinotate_databases/Trinotate.sqlite
 
 
 ####################
@@ -90,7 +90,7 @@ CMD={__RNAMMER_TRANS_PROG__} --transcriptome {__TRANSCRIPTS_FASTA__} --path_to_r
 [TRINOTATE_WGET]
 RANK=1000
 RUN=T
-CMD=cp ../data/trinotate_data/Trinotate.boilerplate.sqlite Trinotate.sqlite
+CMD=cp {__TRINOTATE_BOILERPLATE__} Trinotate.sqlite
 
 [TRINOTATE_INIT]
 RANK=1100

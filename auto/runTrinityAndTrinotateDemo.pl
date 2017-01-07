@@ -345,9 +345,7 @@ sub process_cmd {
     }
     
     $STEP_COUNT++;
-    $checkpoint .= "s_" . sprintf("%02i", $STEP_COUNT);
     
-
     if (-e $checkpoint) { return; }
 
     

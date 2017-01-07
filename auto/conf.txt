@@ -73,7 +73,7 @@ CMD={__SIGNALP_PROG__} -f short -n signalp.out Trinity.fasta.transdecoder.pep > 
 
 [TMHMM]
 RANK=600
-RUN=T
+RUN=F
 CMD={__TMHMM_PROG__} --short < Trinity.fasta.transdecoder.pep > tmhmm.out
 
 [RNAMMER]
@@ -119,7 +119,7 @@ CMD={__TRINOTATE_HOME__}/Trinotate  Trinotate.sqlite LOAD_rnammer Trinity.fasta.
 
 [TRINOTATE_LOAD_TMHMM]
 RANK=1600
-RUN=T
+RUN=F
 CMD={__TRINOTATE_HOME__}/Trinotate  Trinotate.sqlite LOAD_tmhmm tmhmm.out
 
 [TRINOTATE_LOAD_SIGNALP]
